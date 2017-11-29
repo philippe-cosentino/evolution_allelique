@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+ 
+	<title>Evolution all&eacute;lique / sélection naturelle</title>
+	
+	<link rel="stylesheet" href="style.css" type="text/css" media="screen">
+	
+	
+
+	<script type="text/javascript" src="js/raphael-min.js"></script>
+	
+
+	
+	<script type="text/javascript">
+		 // variables globales
+		var tabcourbe = new Array();
+		var nbgen = 100;
+		
+		//graphique
+		var largeur=520;
+		var hauteur=340;
+		var x0=25;
+		var dx=450;
+		var dy=hauteur-65;
+		var y0=dy+40;
+		var view2=null;
+		var paper2=null;
+
+		
+		function graphique()
+		{
+		  efface_courbes();
+			
+		  //courbe 
+			  courbe="";
+			  for (i=0;i<=(nbgen+1);i++)
+			  {
+				x=x0+(dx/(nbgen+1))*i;
+				x=Math.floor(x)+0.5;
+				y=y0-tabcourbe[i]*dy;
+				
+				y=Math.floor(y)+0.5;
+				if (i==0)
+				{
+				  courbe=courbe+' M ';
+				}
+				else
+				{
+				  courbe=courbe+' L ';
+				}
+				courbe = courbe+x+' '+y;  
+				
+			  }	
+			  //console.log("courbe = "+courbe);		  
+			  courbes = paper2.path(courbe);
+			  courbes.attr ("stroke","hsb(1,0.75,0.75)");		
+			  
+		  
+  
+			console.log('graphiques tracés');		  
+		}
+		
+		function demarre ()
+		{
+			console.log("démarrage");
+			
+			// on remplace les , par des . (séparateur décimal)
+			waa=document.getElementById('text_fitAA').value;
+			waa=waa.replace(",",".");
+			wab=document.getElementById('text_fitAB').value;
+			wab=wab.replace(",",".");
+			wbb=document.getElementById('text_fitBB').value;
+			wbb=wbb.replace(",",".");
+			
+			if ((isNaN(waa))||(isNaN(wab))||(isNaN(wbb)))
+			{
+				alert ("Les valeurs sélectives doivent être des valeurs numérique");
+			  return (false);
+			}		
+
+			if ((waa<0)||(wab<0)||(wbb<0))
+			{
+				alert ("Les valeurs sélectives doivent être positives.");
+			  return (false);
+			}			
+			
+			//if ((waa>1)||(wab>1)||(wbb>1)||(waa<0)||(wab<0)||(wbb<0))
+			//{
+			//	alert ("Les valeurs sélectives doivent être comprises entre 0 et 1");
+			//  return (false);
+			//}
+			
+			p=document.getElementById('text_freqinit').value;
+			p=p.replace(",",".");
+			
+			if (isNaN(p))
+			{
+				alert ("La fréquence de l'allèle doit être une valeur numérique");
+			  return (false);
+			}
+			
+			if (p>=100)
+			{
+			  alert ("La fréquence de l'allèle doit être inférieure à 100%");
+			  return (false);
+			}
+			
+			if (p<=0)
+			{
+			  alert ("La fréquence de l'allèle ne doit pas être négative ou nulle");
+			  return (false);
+			}
+			
+
+			p=p/100; // on passe de % à fréquence unitaire
+			q=1-p; // fréquence de l'autre allèle
+			console.log("fréquence initiale p="+p);
+			
+			fip=p;
+			fiaa=p*p;
+			fibb=q*q;
+			fiab=2*p*q;
+			tabcourbe[0]=p;
+			
+			for (i=1;i<=100;i++)
+			{
+				q=1-p; // fréquence de l'autre allèle
+				// W = valeur sélective moyenne de la population
+				w=waa*p*p+2*wab*p*q+wbb*q*q;
+				//console.log("w="+w);
+				// on calcule p pour la génération suivante
+				// http://atlasgeneticsoncology.org/Educ/SelectionID30040FS.html
+				p=p*(waa*p+wab*q);
+				//console.log("fréquence à la génération "+i+" p="+p);
+
+				if (w==0)
+				{
+
+					p=0;  // valeur moyenne nulle, tout le monde est mort
+					q=0;
+				}
+				else
+				{
+					p=p/w;
+					q=1-p;
+				}
+
+				tabcourbe[i]=p;
+				
+
+				if (i==nbgen)
+				{
+					// calcul des fréquences finales
+					ffp=p;
+					ffq=q;
+					ffaa=p*p;
+					console.log("fréquence finale A//A="+ffaa);
+					ffbb=q*q;
+					ffab=2*p*q;
+				}
+
+			} // end for i
+			console.log("fréquence finale p="+ffp);
+			//passage en %
+			ffip=Math.round(fip*100);
+			fffp=Math.round(ffp*100);
+			ffiaa=Math.round(fiaa*100);
+			fffaa=Math.round(ffaa*100);
+			ffibb=Math.round(fibb*100);
+			fffbb=Math.round(ffbb*100);
+			ffiab=100-(ffiaa+ffibb);
+			fffab=100-(fffaa+fffbb);
+			
+			graphique();
+			
+			document.getElementById('label_fip').innerHTML =ffip+'%';
+			document.getElementById('label_ffp').innerHTML =fffp+'%';
+			document.getElementById('label_fiq').innerHTML =100-ffip+'%';
+			document.getElementById('label_ffq').innerHTML =100-fffp+'%';
+			document.getElementById('label_fiaa2').innerHTML =ffiaa+'%';
+			document.getElementById('label_ffaa2').innerHTML =fffaa+'%';
+			document.getElementById('label_fiab2').innerHTML =ffiab+'%';
+			document.getElementById('label_ffab2').innerHTML =fffab+'%';
+			document.getElementById('label_fibb2').innerHTML =ffibb+'%';
+			document.getElementById('label_ffbb2').innerHTML =fffbb+'%';
+			document.getElementById('bilan2').style.visibility="visible";
+		}
+	
+		function change_noms()
+		{
+			nom_allele1=document.getElementById('text_nom_allele1').value;
+			nom_allele2=document.getElementById('text_nom_allele2').value;
+			document.getElementById('label_fitaa').innerHTML = nom_allele1+'//'+nom_allele1+' : ';
+			document.getElementById('label_fitab').innerHTML = nom_allele1+'//'+nom_allele2+' : ';
+			document.getElementById('label_fitbb').innerHTML = nom_allele2+'//'+nom_allele2+' : ';
+			document.getElementById('label_fitaa2').innerHTML = nom_allele1+'//'+nom_allele1+' : ';
+			document.getElementById('label_fitab2').innerHTML = nom_allele1+'//'+nom_allele2+' : ';
+			document.getElementById('label_fitbb2').innerHTML = nom_allele2+'//'+nom_allele2+' : ';
+			
+			document.getElementById('label_a').innerHTML = nom_allele1;
+			document.getElementById('label_a3').innerHTML = nom_allele1;
+			document.getElementById('label_b').innerHTML = nom_allele2;
+			document.getElementById('label_freq').innerHTML = "Fréquence initiale de l'allèle "+nom_allele1+" = ";
+		}
+		
+		function change_vals()
+		{
+			console.log("valeurs changées");
+
+		}
+		
+		function initialise()
+		{
+			document.getElementById('bilan2').style.visibility="hidden";		
+			view2 = document.getElementById('cadre1');
+			paper2 = new Raphael(view2, largeur, hauteur);
+			efface_courbes();
+		}
+			
+		function efface_courbes()
+		{
+			paper2.clear();
+			//paper2.rect (0,0,largeur,hauteur,5);
+
+			// graduations horizontales
+			for (i=1;i<=(nbgen/10);i++)
+			{
+				x=x0+(dx/(nbgen+1))*(i*10);
+				x=Math.floor(x)+0.5;
+				gradx = paper2.path("M "+x+" "+y0+" l 0 -5");  
+				if (i==5)
+				{
+					x50=x;
+				}
+				if (i==10)
+				{
+					x100=x;
+				}
+			}
+			for (i=1;i<=(nbgen);i++)
+			{
+			x=x0+(dx/(nbgen+1))*(i);
+			x=Math.floor(x)+0.5;
+			gradx = paper2.path("M "+x+" "+y0+" l 0 -2");  
+			}	
+			// graduations verticales
+			for (i=0;i<=10;i++)
+			{
+			y=y0-(dy/10)*i;
+			y=Math.floor(y)+0.5;
+			if (i==10)
+			{
+				y100=y;
+			}
+			if (i==5)
+			{
+				y50=y;
+			}
+			grady = paper2.path("M "+x0+" "+y+" l 5 0");  
+			}
+			// axes
+			xx0=x0+0.5;
+			yy0=y0+0.5;
+
+			axex = paper2.path("M "+xx0+" "+yy0+" l "+(dx+20)+" 0 l -5 -5 m 0 10 l 5 -5");  
+			axey = paper2.path("M "+xx0+" "+yy0+" l 0 "+(-dy-20)+" l -5 5 m 10 0 l -5 -5");  
+			textex = paper2.text(x0+dx,y0+20, "Générations");
+			textey = paper2.text(x0+20,y0-dy-30, "Fréquence (en %)");
+			texte100y = paper2.text(x0-12,y100, "100");
+			texte50y = paper2.text(x0-12,y50, "50");
+			texte50x = paper2.text(x50,y0+10, "50");
+			texte100x = paper2.text(x100,y0+10, "100");
+			texte0 = paper2.text(x0-5,y0+5, "0");
+		  
+			console.log("courbes effacées");
+			document.getElementById('bilan2').style.visibility="hidden";
+		}
+	
+
+		
+	</script>
+	
+
+</head>
+
+<body onLoad="initialise();">
+<div id="corps">
+	<h1 align=center>
+		Modélisation de l'évolution de la fréquence allélique<br>
+		(sélection naturelle) 
+	</h1>
+
+	<div id="moitie_haut" class="moitie_haut">
+
+		<div id="presentation" class="presentation">
+		<p><b><i>Comprendre les valeurs sélectives :</i></b></p>
+		<small>
+		<p>La valeur sélective (&omega;) quantifie la capacité d'un individu à survivre et à se reproduire en fonction de son génotype.</p>
+		<p>Dans ce modèle les valeurs sélectives s'étendent de :
+		<blockquote>
+		0 = mort avant de pouvoir se reproduire / stérilité
+		<br>1 = succès reproducteur maximal
+		</blockquote>
+		</p>
+
+		<p>Après avoir attribué une valeur sélective à chaque génotype, vous pourrez prédire l'évolution de chaque allèle, de génération en génération.</p>
+		
+		<p>Si votre objectif se limite à connaître la tendance de cette évolution, il ne vous est pas nécessaire de connaître les valeurs sélectives exactes : 
+		<br>- laissez la valeur 0,5 à la fréquence initiale
+		<br>- donnez la valeur 1 au(x) génotype(s) le(s) plus avantageux
+		<br>- donnez les valeurs 0,9, et 0,8 aux suivants
+		<br>- donnez la valeur 0 à tout génotype ne permettant aucune reproduction
+		</p>
+		</small>
+		</div>
+		<div id="cadre1"><center><i><small>Evolution dans le temps de la fréquence de l'allèle <label id="label_a3">A</label></small></i></center></div>
+	</div>
+	
+	
+	<div id="moitie_bas">
+		<div id="reglages" class="reglages">
+			<p>
+		  <label>Nom de l'allèle 1 =
+			<input type="text" id="text_nom_allele1"  size="4" maxlength="4" value="A"  onkeyup="javascript:change_noms()"/>
+		  </label>
+		  <br>
+		  <label>Nom de l'allèle 2 =
+			<input type="text" id="text_nom_allele2"  size="4" maxlength="4" value="B" onkeyup="javascript:change_noms()"/>
+		  </label>
+		  </p>
+		  <p>
+		  <label id="label_freq">Fréquence initiale de l'allèle A =</label>
+			<input type="text" id="text_freqinit"  size="4" maxlength="4" value="50"/> %
+			</p>
+		   <p>Valeurs sélectives (&omega;) associées aux génotypes :   </p>
+		   <blockquote>
+		   <table>
+		   <tr>
+		   <td align=right>
+		   <label id="label_fitaa">A//A : </label></td>
+		   <td>
+		   <input type="text" id="text_fitAA"  size="4" maxlength="4" value="0,8" onkeyup="javascript:change_vals()"/></td>
+		   </tr>
+		   <tr>
+		   <td align=right>
+		   <label id="label_fitab">A//B : </label></td>
+		   <td>
+		   <input type="text" id="text_fitAB"  size="4" maxlength="4" value="1"/></td>
+		   </tr>
+		   <tr>
+		   <td align=right>
+		   <label id="label_fitbb">B//B : </label></td>
+		   <td>
+		   <input type="text" id="text_fitBB"  size="4" maxlength="4" value="0,9"/></td>
+		   </tr>
+			</table>
+		   </blockquote>
+			
+			<div id="boutons" class="unselectable">
+				<input id="demarre" class="button3" type="button" value="Lancer le calcul" onClick="demarre()">
+				<input id="effacer" class="button3" type="button" value="Effacer la courbe" onClick="efface_courbes()">
+				
+			</div>
+			
+			<p align=right><small><i>
+				Version HTML5/JS(Raphaël), Auteur : Philippe Cosentino
+			</i></small></p>
+			<p align=right><small><i>
+				Voir aussi :</i>&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://www.ac-nice.fr/svt/productions/html5/derive2/">Dérive génétique</a>
+				<br>&nbsp;&nbsp;&nbsp;&nbsp;<a href="http://www.ac-nice.fr/svt/productions/freeware/derive/html5/index.htm">Modélisation de la dérive génétique par tirage avec remise</a>
+			</small></p>
+		</div>
+		
+		<div id="bilan" class="bilan">
+		<div id="bilan2">
+		<p><b><i>Bilan (après 100 générations) :</i></b></p>
+		
+		<table class="tableaubilan" >
+		<tr>
+		<th>&nbsp;</td>
+		<th>Fréquence initiale</td>
+		<th>Fréquence finale</td>
+		</tr>
+		<tr>
+		<td>allèle <label id="label_a">A</label></td>
+		<td><label id="label_fip">50%</label></td>
+		<td><label id="label_ffp">50%</label></td>
+				
+		</tr>
+		<tr>
+		<td>allèle <label id="label_b">B</label></td>
+		<td><label id="label_fiq">50%</label></td>
+		<td><label id="label_ffq">50%</label></td>
+				
+		</tr>
+		<tr>
+		<td><label id="label_fitaa2">A//A : </label></td>
+		<td><label id="label_fiaa2">50%</label></td>
+		<td><label id="label_ffaa2">50%</label></td>
+				
+		</tr>
+		
+		<tr>
+		<td><label id="label_fitab2">A//B : </label></td>
+		<td><label id="label_fiab2">50%</label></td>
+		<td><label id="label_ffab2">50%</label></td>
+				
+		</tr>
+		
+		
+		<tr>
+		<td><label id="label_fitbb2">B//B : </label></td>
+		<td><label id="label_fibb2">50%</label></td>
+		<td><label id="label_ffbb2">50%</label></td>
+				
+		</tr>
+		
+		</table>
+		
+		<small><i>
+		<br>Calculs réalisés suivant les lois de Hardy-Weinberg en supposant :
+		<br>- que l'autofécondation est possible
+		<br>- que la population est panmictique et d'effectif infini
+		</i></small>
+		
+		</div>
+		</div>
+	</div>
+
+
+
+</div>
+
+</body>
+</html>
